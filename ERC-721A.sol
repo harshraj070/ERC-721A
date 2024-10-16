@@ -10,9 +10,20 @@ contract Web3Builder is ERC721A, Ownable {
     uint256 public constant mintPrice = 1 ether;
     uint256 public constant maxMint = 5;
     uint256 public maxMintSupply = 100;
+    uint256 public constant refundPeriod = 3 minutes;
+
+    address public refundAddress;
+    
+    mapping(uint256 => uint256)public refundEndTimeStamp;
+    uint256 public refundEndTimeStamp;
+    mapping(uint256 => bool)public hasRefunded;
+
+
     constructor(address initialOwner){
-        ERC721a("Web3Builder", "MTK")
-        Ownable(initialOwner)
+        ERC721a("Web3Builder", "MTK");
+        Ownable(initialOwner);
+        refundAddress = address(this);
+        refundEndTimeStamp = block.timestamp + refundPeriod;
     }
 
     function _baseURI() internal pure override returns (string memory) {
@@ -24,5 +35,9 @@ contract Web3Builder is ERC721A, Ownable {
         require(_numberMinted(msg.sender)+quantity <= maxMint,"Mint limit");
         require(_totalMinted()+quantity <= maxMintSupply,"SOLD OUT");
         _safeMint(msg.sender, quantity);
+    }
+    function withdraw()external onlyOwner;{
+        uint256 balance = address(this).balance;
+        Address.sendValue(payable(msg.sender), balance);
     }
 }
