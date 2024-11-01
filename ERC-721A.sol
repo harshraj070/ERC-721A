@@ -12,16 +12,12 @@ contract Web3Builder is ERC721A, Ownable {
     uint256 public constant refundPeriod = 3 minutes;
 
     address public refundAddress;
-    
-    mapping(uint256 => uint256)public refundEndTimeStamp;
-    uint256 public refundEndTimeStamp;
-    mapping(uint256 => bool)public hasRefunded;
 
-    constructor(address initialOwner){
-        ERC721a("Web3Builder", "MTK");
-        Ownable(initialOwner);
+    mapping(uint256 => uint256) public refundEndTimeStamp;
+    mapping(uint256 => bool) public hasRefunded;
+
+    constructor(address initialOwner) ERC721A("Web3Builder", "MTK") Ownable(initialOwner) {
         refundAddress = address(this);
-        refundEndTimeStamp = block.timestamp + refundPeriod;
     }
 
     function _baseURI() internal pure override returns (string memory) {
@@ -32,7 +28,12 @@ contract Web3Builder is ERC721A, Ownable {
         require(msg.value >= mintPrice * quantity, "Value is not enough");
         require(_numberMinted(msg.sender) + quantity <= maxMint, "Mint limit");
         require(_totalMinted() + quantity <= maxMintSupply, "SOLD OUT");
-        _safeMint(msg.sender, quantity);
+
+        for (uint256 i = 0; i < quantity; i++) {
+            uint256 tokenId = _nextTokenId();
+            refundEndTimeStamp[tokenId] = block.timestamp + refundPeriod;
+            _safeMint(msg.sender, 1);
+        }
     }
 
     function withdraw() external onlyOwner {
@@ -48,5 +49,19 @@ contract Web3Builder is ERC721A, Ownable {
         hasRefunded[tokenId] = true;
         _burn(tokenId);
         Address.sendValue(payable(msg.sender), mintPrice);
+    }
+
+    function batchMint(uint256 quantity) public onlyOwner {
+        require(_totalMinted() + quantity <= maxMintSupply, "SOLD OUT");
+
+        for (uint256 i = 0; i < quantity; i++) {
+            uint256 tokenId = _nextTokenId();
+            refundEndTimeStamp[tokenId] = block.timestamp + refundPeriod;
+            _safeMint(msg.sender, 1);
+        }
+    }
+
+    function extendRefundPeriod(uint256 tokenId, uint256 additionalTime) external onlyOwner {
+        refundEndTimeStamp[tokenId] += additionalTime;
     }
 }
