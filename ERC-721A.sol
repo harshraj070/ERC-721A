@@ -64,4 +64,8 @@ contract Web3Builder is ERC721A, Ownable {
     function extendRefundPeriod(uint256 tokenId, uint256 additionalTime) external onlyOwner {
         refundEndTimeStamp[tokenId] += additionalTime;
     }
+
+    function setMaxMintSupply(uint256 newMaxMintSupply) external onlyOwner {
+        maxMintSupply = newMaxMintSupply;
+    }
 }
